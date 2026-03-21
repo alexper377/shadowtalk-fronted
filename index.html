@@ -478,37 +478,26 @@ let findTimer    = null;
 // ════════════════════════════════════════════════
 //  INIT
 // ════════════════════════════════════════════════
-async function init() {
+function init() {
+  hide("loader");
   const cfg = STORE.cfg;
-  if (!cfg?.url) { hide("loader"); show("cfg-screen"); return; }
+  if (!cfg?.url) { show("cfg-screen"); return; }
   API_URL = cfg.url.replace(/\/$/, "");
- 
-  try {
-    const controller = new AbortController();
-    const tid = setTimeout(() => controller.abort(), 5000);
-    const r = await fetch(`${API_URL}/health`, { signal: controller.signal });
-    clearTimeout(tid);
-    if (!r.ok) throw new Error();
-  } catch {
-    hide("loader"); show("cfg-screen");
-    g("cfg-err").textContent = "Cannot reach backend. Check URL.";
-    return;
-  }
- 
   const saved = STORE.auth;
   if (saved?.token) {
     TOKEN = saved.token;
-    try {
-      const user = await apiFetch("/api/auth/me");
+    apiFetch("/api/auth/me").then(user => {
       ME = user;
-      TOKEN = saved.token;
-      hide("loader");
       enterApp();
-      return;
-    } catch { STORE.clear(); }
+    }).catch(() => {
+      STORE.clear();
+      show("auth-screen");
+      genNick();
+    });
+  } else {
+    show("auth-screen");
+    genNick();
   }
-  hide("loader"); show("auth-screen");
-  genNick();
 }
  
 async function saveBackendUrl() {
