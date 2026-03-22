@@ -1061,8 +1061,9 @@ function msgH(m){
     bub=`<div class="img-bubble" onclick="openLb('img','${k}')"><img src="${m.file_data}" loading="lazy"/></div>`;
   }else if(m.type==='video_note'&&m.file_data){
     const k='_vn'+m.id;window[k]=m.file_data;
-    bub=`<div class="vidnote-wrap" id="vn_${m.id}" onclick="playVidNote('${k}')"><video class="vidnote" id="vnv_${m.id}" playsinline preload="metadata"></video><div class="vidnote-play" id="vnp_${m.id}"><svg viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>${m.content?`<div class="vidnote-dur">${esc(m.content)}</div>`:''}</div>`;
-    setTimeout(()=>{const v=document.getElementById('vnv_${m.id}');if(v&&window['${k}'])v.src=window['${k}'];},0);
+    bub=`<div class="vidnote-wrap" onclick="playVidNote('${k}')"><div style="width:200px;height:200px;border-radius:50%;overflow:hidden;background:#000;position:relative"><video id="vnv_${m.id}" style="width:100%;height:100%;object-fit:cover" playsinline preload="metadata"></video><div class="vidnote-play"><svg viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>${m.content?`<div class="vidnote-dur">${esc(m.content)}</div>`:''}</div></div>`;
+    // Set video src after render
+    requestAnimationFrame(()=>{const v=document.getElementById('vnv_${m.id}');if(v){try{const blob=dataURLtoBlob(window['${k}']||'');v.src=URL.createObjectURL(blob);}catch{v.src=window['${k}']||'';}}});
   }else if(m.type==='file'&&m.file_data){
     const k='_f'+m.id;window[k]=m.file_data;
     const ico=fileIco(m.file_name||'');const sz=fmtSz(m.file_size||0);
@@ -1114,23 +1115,36 @@ function onFileSelect(inp){
   r.readAsDataURL(f);inp.value='';
 }
 function openLb(type,key){
-  const src=window[key]||'';
+  const data=window[key]||'';
   const el=g('lb-content');
   if(type==='vid'){
     el.innerHTML=`<video controls autoplay playsinline style="max-width:95vw;max-height:85vh;border-radius:8px"></video>`;
-    el.querySelector('video').src=src;
+    const v=el.querySelector('video');
+    try{const blob=dataURLtoBlob(data);v.src=URL.createObjectURL(blob);}catch{v.src=data;}
   }else{
     el.innerHTML=`<img style="max-width:95vw;max-height:85vh;border-radius:8px"/>`;
-    el.querySelector('img').src=src;
+    const img=el.querySelector('img');
+    try{const blob=dataURLtoBlob(data);img.src=URL.createObjectURL(blob);}catch{img.src=data;}
   }
   g('lightbox').classList.add('open');
 }
+function dataURLtoBlob(dataURL){
+  if(!dataURL||!dataURL.includes(','))return new Blob();
+  const arr=dataURL.split(',');
+  const mime=arr[0].match(/:(.*?);/)[1];
+  const bstr=atob(arr[1]);
+  let n=bstr.length;const u8=new Uint8Array(n);
+  while(n--)u8[n]=bstr.charCodeAt(n);
+  return new Blob([u8],{type:mime});
+}
 function playVidNote(key){
-  const src=window[key]||'';
-  if(!src)return;
+  const data=window[key]||'';
+  if(!data)return;
   const el=g('lb-content');
-  el.innerHTML=`<video controls autoplay playsinline style="width:min(400px,90vw);height:min(400px,90vw);border-radius:50%;object-fit:cover"></video>`;
-  el.querySelector('video').src=src;
+  el.innerHTML=`<video controls autoplay playsinline style="width:min(400px,90vw);height:min(400px,90vw);border-radius:50%;object-fit:cover;background:#000"></video>`;
+  const v=el.querySelector('video');
+  try{const blob=dataURLtoBlob(data);v.src=URL.createObjectURL(blob);}
+  catch{v.src=data;}
   g('lightbox').classList.add('open');
 }
 function closeLb(){g('lightbox').classList.remove('open');g('lb-content').innerHTML='';}
@@ -1297,8 +1311,9 @@ function touchSt(e,msgId,isOut,content){touchTimer=setTimeout(()=>{const t=e.tou
 function touchEn(){clearTimeout(touchTimer);}
 document.addEventListener('click',e=>{
   if(!e.target.closest('#ctx-menu'))g('ctx-menu').classList.remove('open');
-  if(!e.target.closest('#chat-menu')&&!e.target.closest('[onclick*="showChatMenu"]'))g('chat-menu').classList.remove('open');
+  if(!e.target.closest('#chat-menu')&&!e.target.closest('.cbtn[onclick*="showChatMenu"]'))g('chat-menu').classList.remove('open');
   if(!e.target.closest('.srch-wrap'))g('srch-drop').classList.remove('open');
+  if(!e.target.closest('#emoji-picker')&&!e.target.closest('[onclick*="showEmojiPicker"]'))g('emoji-picker').classList.remove('open');
 });
 
 function ctxReply(){
@@ -1334,16 +1349,14 @@ function scrollToMsg(id){const el=document.getElementById('msg_'+id);if(el){el.s
 // ═══ CHAT MENU ═══
 function showChatMenu(e){
   e.stopPropagation();
+  e.preventDefault();
   const menu=g('chat-menu');
-  const wasOpen=menu.classList.contains('open');
-  menu.classList.remove('open');
-  if(wasOpen)return;
   const rect=e.currentTarget.getBoundingClientRect();
   menu.style.right=(window.innerWidth-rect.right)+'px';
   menu.style.top=(rect.bottom+4)+'px';
   menu.style.left='auto';
   menu.style.zIndex='500';
-  setTimeout(()=>menu.classList.add('open'),0);
+  menu.classList.toggle('open');
 }
 function hideChatMenu(){g('chat-menu').classList.remove('open');}
 
