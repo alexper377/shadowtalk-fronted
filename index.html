@@ -807,7 +807,9 @@ function renderList(filter){
 // ════ OPEN CONV ════
 async function openConv(cid){
   activeCid=cid;
-  const c=convs.find(x=>x.id===cid);if(!c)return;
+  let c=convs.find(x=>x.id===cid);
+  if(!c){await loadConvs();c=convs.find(x=>x.id===cid);}
+  if(!c)return;
   c.unread=0;renderList();
   openChat(); // mobile: hide sidebar
   const name=c.type==='direct'?(c.other_display_name||c.other_username):c.name;
@@ -1071,7 +1073,13 @@ async function createGroup(){
 }
 async function chatWith(uid){
   closeModal('nc-modal');closeSrch();
-  try{const{id}=await api('/api/conversations/direct',{method:'POST',body:{user_id:uid}});await loadConvs();openConv(id);}catch(e){toast(e.message);}
+  try{
+    const{id}=await api('/api/conversations/direct',{method:'POST',body:{user_id:uid}});
+    await loadConvs();
+    // small delay to ensure convs list is rendered before opening
+    await new Promise(r=>setTimeout(r,50));
+    openConv(id);
+  }catch(e){toast(e.message);}
 }
 
 // ════ DRAWER ════
