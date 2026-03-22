@@ -295,6 +295,8 @@ button{cursor:pointer;}
   display:flex;gap:6px;align-items:flex-end;
   flex-shrink:0;
   border-top:1px solid var(--border);
+  position:relative;
+  z-index:5;
 }
 .reply-preview{
   display:none;padding:8px 12px;background:var(--bg2);
@@ -503,8 +505,9 @@ button{cursor:pointer;}
   .input-bar{padding-bottom:max(12px,env(safe-area-inset-bottom));}
   .no-post-bar{padding-bottom:max(14px,env(safe-area-inset-bottom));}
   /* Tap targets */
-  .btn-send,.btn-rec,.btn-vidnote{width:48px;height:48px;}
+  .btn-send,.btn-rec,.btn-vidnote{width:48px;height:48px;flex-shrink:0;}
   .btn-send svg{width:23px;height:23px;}
+  .input-wrap{min-width:0;}
 }
 @media(max-width:700px) and (orientation:landscape){
   .msgs{
@@ -1099,7 +1102,7 @@ function onInp(el){
   if(!typSent&&activeCid){socket.emit('typing:start',{conversation_id:activeCid});typSent=true;}
   clearTimeout(typStop);typStop=setTimeout(()=>{if(activeCid)socket.emit('typing:stop',{conversation_id:activeCid});typSent=false;},2500);
 }
-function onKey(e){if(e.key==='Enter'&&!e.shiftKey&&window.innerWidth>700){e.preventDefault();sendMsg();}}
+function onKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
 
 // ═══ FILE UPLOAD ═══
 function onFileSelect(inp){
