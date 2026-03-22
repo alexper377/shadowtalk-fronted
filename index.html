@@ -1355,62 +1355,48 @@ function showChatMenu(e){
   menu.style.right=(window.innerWidth-rect.right)+'px';
   menu.style.top=(rect.bottom+4)+'px';
   menu.style.left='auto';
-  menu.style.zIndex='500';
   menu.classList.toggle('open');
 }
 function hideChatMenu(){g('chat-menu').classList.remove('open');}
 
-async function clearChat(){
-  if(!activeCid)return;
+function clearChat(){
   hideChatMenu();
+  const cid=activeCid;
+  if(!cid){toast('No chat open');return;}
   showConfirm('Clear chat history?','All messages will be permanently deleted.',async()=>{
-    const cid=activeCid;
     try{
-      await api(`/api/conversations/${cid}/messages`,{method:'DELETE'});
+      const r=await fetch(API+'/api/conversations/'+cid+'/messages',{
+        method:'DELETE',
+        headers:{'Authorization':'Bearer '+TK,'Content-Type':'application/json'}
+      });
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(d.error||'Server error '+r.status);
       const el=g('msgs-in');
-      if(el)el.innerHTML='<div class="sys-msg" style="padding:16px">Chat cleared</div>';
+      if(el)el.innerHTML='<div class="sys-msg" style="padding:20px">Chat cleared</div>';
       const c=convs.find(x=>x.id===cid);
       if(c){c.last_content='';c.last_type='';c.unread=0;renderList();}
-      toast('Chat cleared ✓');
-    }catch(e){
-      // Try with explicit fetch
-      try{
-        const r=await fetch(API+`/api/conversations/${cid}/messages`,{
-          method:'DELETE',headers:{'Authorization':`Bearer ${TK}`}
-        });
-        if(r.ok){
-          const el=g('msgs-in');
-          if(el)el.innerHTML='<div class="sys-msg" style="padding:16px">Chat cleared</div>';
-          toast('Chat cleared ✓');
-        }else toast('Error clearing chat');
-      }catch(e2){toast('Error: '+e2.message);}
-    }
+      toast('Cleared ✓');
+    }catch(err){toast('Error: '+err.message);}
   });
 }
-async function deleteConv(){
-  if(!activeCid)return;
+
+function deleteConv(){
   hideChatMenu();
-  showConfirm('Delete this chat?','Chat will be removed from your list.',async()=>{
-    const cid=activeCid;
+  const cid=activeCid;
+  if(!cid){toast('No chat open');return;}
+  showConfirm('Delete this chat?','Chat removed from your list.',async()=>{
     try{
-      await api(`/api/conversations/${cid}/leave`,{method:'POST'});
+      const r=await fetch(API+'/api/conversations/'+cid+'/leave',{
+        method:'POST',
+        headers:{'Authorization':'Bearer '+TK,'Content-Type':'application/json'}
+      });
+      const d=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(d.error||'Server error '+r.status);
       convs=convs.filter(c=>c.id!==cid);
       activeCid=null;activeConv=null;
       renderList();backToList();
-      toast('Chat deleted ✓');
-    }catch(e){
-      try{
-        const r=await fetch(API+`/api/conversations/${cid}/leave`,{
-          method:'POST',headers:{'Authorization':`Bearer ${TK}`,'Content-Type':'application/json'}
-        });
-        if(r.ok){
-          convs=convs.filter(c=>c.id!==cid);
-          activeCid=null;activeConv=null;
-          renderList();backToList();
-          toast('Chat deleted ✓');
-        }else toast('Error deleting chat');
-      }catch(e2){toast('Error: '+e2.message);}
-    }
+      toast('Deleted ✓');
+    }catch(err){toast('Error: '+err.message);}
   });
 }
 
