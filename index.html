@@ -593,6 +593,9 @@ input,textarea,button{font-family:'Inter',sans-serif;}
   <div class="ctx-item red" onclick="hideChatMenu();clearChat()">
     <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>Clear chat history
   </div>
+  <div class="ctx-item red" onclick="hideChatMenu();deleteConv()">
+    <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>Delete chat
+  </div>
 </div>
 
 <!-- CONTEXT MENU -->
@@ -644,7 +647,7 @@ let API='',socket=null,ME=null,TK=null;
 let convs=[],friends=[],activeCid=null;
 let typTimers={},nickT=null,srchT=null,fndT=null,mSrchT=null;
 let typSent=false,typStop=null;
-let recorder=null,chunks=[],recording=false;
+let recorder=null,chunks=[],recording=false,recStartTime=0;
 let pc=null,lStream=null,callCid=null,callType=null,inCall=null;
 let grpMembers=[];
 let deferredInstall=null;
@@ -941,19 +944,29 @@ function fmtSz(b){if(b<1024)return b+'B';if(b<1048576)return(b/1024).toFixed(1)+
 // ════ VOICE ════
 async function toggleRec(){
   if(!recording){
-    try{const s=await navigator.mediaDevices.getUserMedia({audio:true});recorder=new MediaRecorder(s);chunks=[];recorder.ondataavailable=e=>chunks.push(e.data);recorder.onstop=sendVoice;recorder.start();recording=true;g('btn-rec').classList.add('recording');toast('Recording… tap to send');}
+    try{const s=await navigator.mediaDevices.getUserMedia({audio:true});recorder=new MediaRecorder(s);chunks=[];recorder.ondataavailable=e=>chunks.push(e.data);recorder.onstop=sendVoice;recStartTime=Date.now();recorder.start();recording=true;g('btn-rec').classList.add('recording');toast('Recording… tap to send');}
     catch{toast('Microphone not available');}
   }else{recorder.stop();recorder.stream.getTracks().forEach(t=>t.stop());recording=false;g('btn-rec').classList.remove('recording');}
 }
 function sendVoice(){
-  const blob=new Blob(chunks,{type:'audio/webm'});const dur=Math.round(blob.size/1600);
+  const blob=new Blob(chunks,{type:'audio/webm'});
+  const totalSec=Math.max(1,Math.round((Date.now()-recStartTime)/1000));
+  const mins=Math.floor(totalSec/60);const secs=totalSec%60;
+  const durStr=mins+':'+(secs<10?'0':'')+secs;
   const r=new FileReader();
-  r.onload=async e=>{try{await api('/api/messages/upload',{method:'POST',body:{conversation_id:activeCid,type:'audio',file_name:'voice.webm',file_size:blob.size,file_data:e.target.result,content:'0:'+dur}});}catch{toast('Voice send failed');}};
+  r.onload=async e=>{try{await api('/api/messages/upload',{method:'POST',body:{conversation_id:activeCid,type:'audio',file_name:'voice.webm',file_size:blob.size,file_data:e.target.result,content:durStr}});}catch{toast('Voice send failed');}};
   r.readAsDataURL(blob);
 }
 
 // ════ CALLS ════
-const ICE={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]};
+const ICE={iceServers:[
+  {urls:'stun:stun.l.google.com:19302'},
+  {urls:'stun:stun1.l.google.com:19302'},
+  {urls:'stun:openrelay.metered.ca:80'},
+  {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'}
+]};
 async function startCall(type,cid){
   callCid=cid;callType=type;const c=convs.find(x=>x.id===cid);
   showCallUI(c?c.other_display_name||c.other_username:'Call',c?c.other_avatar_color:'#2aabee','Calling…',false);
@@ -965,6 +978,10 @@ async function startCall(type,cid){
     pc.onicecandidate=e=>{if(e.candidate)socket.emit('call:ice',{conversation_id:cid,candidate:e.candidate});};
     const offer=await pc.createOffer();await pc.setLocalDescription(offer);
     socket.emit('call:offer',{conversation_id:cid,offer,type,caller_name:ME.display_name||ME.username,caller_color:ME.avatar_color});
+    pc.oniceconnectionstatechange=()=>{
+      if(pc.iceConnectionState==='connected'||pc.iceConnectionState==='completed')g('call-status').textContent='Connected';
+      if(pc.iceConnectionState==='failed'){endCall(false);toast('Call failed — network issue');}
+    };
   }catch{endCall(false);toast('Cannot access camera/mic');}
 }
 async function onIncomingCall(d){
@@ -980,7 +997,11 @@ async function acceptCall(){
     pc.ontrack=e=>{g('rv').srcObject=e.streams[0];};
     pc.onicecandidate=e=>{if(e.candidate)socket.emit('call:ice',{conversation_id:callCid,candidate:e.candidate});};
     await pc.setRemoteDescription(inCall.offer);const ans=await pc.createAnswer();await pc.setLocalDescription(ans);
-    socket.emit('call:answer',{conversation_id:callCid,answer:ans});g('call-status').textContent='Connected';
+    socket.emit('call:answer',{conversation_id:callCid,answer:ans});
+    pc.oniceconnectionstatechange=()=>{
+      if(pc.iceConnectionState==='connected'||pc.iceConnectionState==='completed')g('call-status').textContent='Connected';
+      if(pc.iceConnectionState==='failed'){endCall(false);toast('Call failed — network issue');}
+    };
   }catch{endCall(false);toast('Cannot access camera/mic');}
 }
 let muted=false;
@@ -1169,6 +1190,19 @@ function clearChat(){
   showConfirm('Clear chat history?','All messages will be permanently deleted for everyone.',async()=>{
     try{await api(`/api/conversations/${activeCid}/messages`,{method:'DELETE'});const el=g('msgs-in');if(el)el.innerHTML='<div class="sys-msg">Chat cleared</div>';toast('Chat cleared');}
     catch(e){toast('Error: '+e.message);}
+  });
+}
+function deleteConv(){
+  if(!activeCid)return;
+  showConfirm('Delete this chat?','The chat will be removed from your list. Messages stay for other members.',async()=>{
+    try{
+      await api(`/api/conversations/${activeCid}/leave`,{method:'POST'});
+      convs=convs.filter(c=>c.id!==activeCid);
+      activeCid=null;renderList();
+      g('chat-area').innerHTML=defaultEmpty();
+      const sb=g('sidebar');if(sb)sb.classList.remove('hidden');
+      toast('Chat deleted');
+    }catch(e){toast('Error: '+e.message);}
   });
 }
 
