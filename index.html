@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="ShadowTalk">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#17212b">
-<link rel="manifest" href="/manifest.json">
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;ShadowTalk&quot;,&quot;short_name&quot;:&quot;ShadowTalk&quot;,&quot;start_url&quot;:&quot;/&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%2317212b&quot;,&quot;theme_color&quot;:&quot;%2317212b&quot;,&quot;icons&quot;:[{&quot;src&quot;:&quot;data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='42' fill='%232AABEE'/><path d='M96 40a56 56 0 1 0 0 112A56 56 0 0 0 96 40z' fill='%231a9bd4'/></svg>&quot;,&quot;sizes&quot;:&quot;192x192&quot;,&quot;type&quot;:&quot;image/svg+xml&quot;}]}">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%232AABEE'/><path d='M50 90a40 40 0 1 0 80 0 40 40 0 0 0-80 0z' fill='%231a9bd4'/><path d='M68 86l18 18 26-26' stroke='white' stroke-width='8' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>">
 <title>ShadowTalk</title>
 <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
@@ -450,6 +450,31 @@ button{cursor:pointer;}
 .online-badge{font-size:11px;background:rgba(77,205,95,.12);color:var(--green);border-radius:4px;padding:1px 6px;margin-left:4px;}
 .pending-badge{font-size:11px;background:rgba(245,166,35,.12);color:var(--orange);border-radius:4px;padding:1px 6px;}
 
+
+/* REACTIONS */
+.reactions{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+.reaction{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:3px 8px;font-size:13px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:4px;user-select:none;}
+.reaction:hover,.reaction:active{background:var(--bg4);border-color:var(--acc);}
+.reaction.mine{background:var(--accs);border-color:rgba(42,171,238,.3);}
+.reaction-count{font-size:12px;color:var(--text2);font-weight:500;}
+
+/* EMOJI PICKER */
+.emoji-picker{position:absolute;background:var(--bg2);border:1px solid var(--bord2);border-radius:14px;padding:8px;z-index:501;box-shadow:0 8px 24px rgba(0,0,0,.3);display:none;}
+.emoji-picker.open{display:flex;}
+.emoji-picker button{width:36px;height:36px;background:transparent;border:none;font-size:20px;border-radius:8px;cursor:pointer;transition:background .12s;}
+.emoji-picker button:hover,.emoji-picker button:active{background:var(--bg3);}
+
+/* PINNED MESSAGE */
+.pinned-bar{padding:8px 14px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer;flex-shrink:0;}
+.pinned-icon{color:var(--acc);font-size:14px;flex-shrink:0;}
+.pinned-text{flex:1;min-width:0;}
+.pinned-label{font-size:11px;font-weight:600;color:var(--acc);}
+.pinned-content{font-size:13px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pinned-close{background:none;border:none;color:var(--text3);font-size:16px;padding:4px;}
+
+/* DOUBLE TICK (read receipt) */
+.tick-read svg{stroke:#2aabee;}
+
 /* MOBILE */
 @media(max-width:700px){
   .sidebar{
@@ -679,9 +704,22 @@ button{cursor:pointer;}
   <div class="drw-body" id="info-drw-body"></div>
 </div>
 
+
+<!-- EMOJI PICKER -->
+<div class="emoji-picker" id="emoji-picker">
+  <button onclick="addReaction('👍')">👍</button>
+  <button onclick="addReaction('❤️')">❤️</button>
+  <button onclick="addReaction('😂')">😂</button>
+  <button onclick="addReaction('😮')">😮</button>
+  <button onclick="addReaction('😢')">😢</button>
+  <button onclick="addReaction('🔥')">🔥</button>
+</div>
+
 <!-- CTX MENU -->
 <div class="ctx-menu" id="ctx-menu">
+  <div class="ctx-item" onclick="showEmojiPicker(event)">😊 React</div>
   <div class="ctx-item" id="ctx-reply" onclick="ctxReply()"><svg viewBox="0 0 24 24"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>Reply</div>
+  <div class="ctx-item" id="ctx-pin" onclick="ctxPin()"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Pin message</div>
   <div class="ctx-item" id="ctx-copy" onclick="ctxCopy()"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</div>
   <div class="ctx-sep"></div>
   <div class="ctx-item red" onclick="ctxDelete(false)"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>Delete for me</div>
@@ -1023,7 +1061,8 @@ function msgH(m){
     bub=`<div class="img-bubble" onclick="openLb('img','${k}')"><img src="${m.file_data}" loading="lazy"/></div>`;
   }else if(m.type==='video_note'&&m.file_data){
     const k='_vn'+m.id;window[k]=m.file_data;
-    bub=`<div class="vidnote-wrap" onclick="openLb('vid','${k}')"><video class="vidnote" src="${m.file_data}" playsinline muted loop></video><div class="vidnote-play"><svg viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>${m.content?`<div class="vidnote-dur">${esc(m.content)}</div>`:''}</div>`;
+    bub=`<div class="vidnote-wrap" id="vn_${m.id}" onclick="playVidNote('${k}')"><video class="vidnote" id="vnv_${m.id}" playsinline preload="metadata"></video><div class="vidnote-play" id="vnp_${m.id}"><svg viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>${m.content?`<div class="vidnote-dur">${esc(m.content)}</div>`:''}</div>`;
+    setTimeout(()=>{const v=document.getElementById('vnv_${m.id}');if(v&&window['${k}'])v.src=window['${k}'];},0);
   }else if(m.type==='file'&&m.file_data){
     const k='_f'+m.id;window[k]=m.file_data;
     const ico=fileIco(m.file_name||'');const sz=fmtSz(m.file_size||0);
@@ -1075,7 +1114,23 @@ function onFileSelect(inp){
   r.readAsDataURL(f);inp.value='';
 }
 function openLb(type,key){
-  const src=window[key]||'';g('lb-content').innerHTML=type==='vid'?`<video src="${src}" controls autoplay playsinline style="max-width:95vw;max-height:85vh;border-radius:8px"></video>`:`<img src="${src}" style="max-width:95vw;max-height:85vh;border-radius:8px"/>`;
+  const src=window[key]||'';
+  const el=g('lb-content');
+  if(type==='vid'){
+    el.innerHTML=`<video controls autoplay playsinline style="max-width:95vw;max-height:85vh;border-radius:8px"></video>`;
+    el.querySelector('video').src=src;
+  }else{
+    el.innerHTML=`<img style="max-width:95vw;max-height:85vh;border-radius:8px"/>`;
+    el.querySelector('img').src=src;
+  }
+  g('lightbox').classList.add('open');
+}
+function playVidNote(key){
+  const src=window[key]||'';
+  if(!src)return;
+  const el=g('lb-content');
+  el.innerHTML=`<video controls autoplay playsinline style="width:min(400px,90vw);height:min(400px,90vw);border-radius:50%;object-fit:cover"></video>`;
+  el.querySelector('video').src=src;
   g('lightbox').classList.add('open');
 }
 function closeLb(){g('lightbox').classList.remove('open');g('lb-content').innerHTML='';}
@@ -1240,7 +1295,11 @@ function showCtx(e,msgId,isOut,content){
 }
 function touchSt(e,msgId,isOut,content){touchTimer=setTimeout(()=>{const t=e.touches[0];showCtx({preventDefault:()=>{},stopPropagation:()=>{},clientX:t.clientX,clientY:t.clientY},msgId,isOut,content);},600);}
 function touchEn(){clearTimeout(touchTimer);}
-document.addEventListener('click',e=>{if(!e.target.closest('.ctx-menu'))g('ctx-menu').classList.remove('open');if(!e.target.closest('.chat-menu-wrap')&&!e.target.closest('#chat-menu'))g('chat-menu').classList.remove('open');});
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#ctx-menu'))g('ctx-menu').classList.remove('open');
+  if(!e.target.closest('#chat-menu')&&!e.target.closest('[onclick*="showChatMenu"]'))g('chat-menu').classList.remove('open');
+  if(!e.target.closest('.srch-wrap'))g('srch-drop').classList.remove('open');
+});
 
 function ctxReply(){
   if(!ctxMsg)return;
@@ -1273,42 +1332,72 @@ function ctxDelete(forAll){
 function scrollToMsg(id){const el=document.getElementById('msg_'+id);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.style.transition='background .3s';el.style.background='var(--accs)';setTimeout(()=>{el.style.background='';},1200);}}
 
 // ═══ CHAT MENU ═══
-function showChatMenu(e){const menu=g('chat-menu');menu.classList.add('open');const rect=e.currentTarget.getBoundingClientRect();menu.style.right=(window.innerWidth-rect.right)+'px';menu.style.top=(rect.bottom+4)+'px';menu.style.left='auto';}
+function showChatMenu(e){
+  e.stopPropagation();
+  const menu=g('chat-menu');
+  const wasOpen=menu.classList.contains('open');
+  menu.classList.remove('open');
+  if(wasOpen)return;
+  const rect=e.currentTarget.getBoundingClientRect();
+  menu.style.right=(window.innerWidth-rect.right)+'px';
+  menu.style.top=(rect.bottom+4)+'px';
+  menu.style.left='auto';
+  menu.style.zIndex='500';
+  setTimeout(()=>menu.classList.add('open'),0);
+}
 function hideChatMenu(){g('chat-menu').classList.remove('open');}
 
-function clearChat(){
+async function clearChat(){
   if(!activeCid)return;
+  hideChatMenu();
   showConfirm('Clear chat history?','All messages will be permanently deleted.',async()=>{
+    const cid=activeCid;
     try{
-      const cid=activeCid;
-      const r=await fetch(API+`/api/conversations/${cid}/messages`,{
-        method:'DELETE',
-        headers:{'Authorization':`Bearer ${TK}`,'Content-Type':'application/json'}
-      });
-      const d=await r.json();
-      if(!r.ok)throw new Error(d.error||'Error');
-      const el=g('msgs-in');if(el)el.innerHTML='<div class="sys-msg">Chat cleared</div>';
-      const c=convs.find(x=>x.id===cid);if(c){c.last_content='';c.unread=0;renderList();}
+      await api(`/api/conversations/${cid}/messages`,{method:'DELETE'});
+      const el=g('msgs-in');
+      if(el)el.innerHTML='<div class="sys-msg" style="padding:16px">Chat cleared</div>';
+      const c=convs.find(x=>x.id===cid);
+      if(c){c.last_content='';c.last_type='';c.unread=0;renderList();}
       toast('Chat cleared ✓');
-    }catch(e){toast('Error: '+e.message);}
+    }catch(e){
+      // Try with explicit fetch
+      try{
+        const r=await fetch(API+`/api/conversations/${cid}/messages`,{
+          method:'DELETE',headers:{'Authorization':`Bearer ${TK}`}
+        });
+        if(r.ok){
+          const el=g('msgs-in');
+          if(el)el.innerHTML='<div class="sys-msg" style="padding:16px">Chat cleared</div>';
+          toast('Chat cleared ✓');
+        }else toast('Error clearing chat');
+      }catch(e2){toast('Error: '+e2.message);}
+    }
   });
 }
-function deleteConv(){
+async function deleteConv(){
   if(!activeCid)return;
+  hideChatMenu();
   showConfirm('Delete this chat?','Chat will be removed from your list.',async()=>{
+    const cid=activeCid;
     try{
-      const cid=activeCid;
-      const r=await fetch(API+`/api/conversations/${cid}/leave`,{
-        method:'POST',
-        headers:{'Authorization':`Bearer ${TK}`,'Content-Type':'application/json'}
-      });
-      const d=await r.json();
-      if(!r.ok)throw new Error(d.error||'Error');
+      await api(`/api/conversations/${cid}/leave`,{method:'POST'});
       convs=convs.filter(c=>c.id!==cid);
       activeCid=null;activeConv=null;
       renderList();backToList();
       toast('Chat deleted ✓');
-    }catch(e){toast('Error: '+e.message);}
+    }catch(e){
+      try{
+        const r=await fetch(API+`/api/conversations/${cid}/leave`,{
+          method:'POST',headers:{'Authorization':`Bearer ${TK}`,'Content-Type':'application/json'}
+        });
+        if(r.ok){
+          convs=convs.filter(c=>c.id!==cid);
+          activeCid=null;activeConv=null;
+          renderList();backToList();
+          toast('Chat deleted ✓');
+        }else toast('Error deleting chat');
+      }catch(e2){toast('Error: '+e2.message);}
+    }
   });
 }
 
@@ -1518,6 +1607,69 @@ function defaultEmpty(){return`<div class="empty"><div class="empty-ico"><svg vi
 // iOS fixes
 document.body.addEventListener('touchmove',e=>{if(e.target.closest('.msgs,.tab-pane,.drw-body,.modal,.auth-scroll,.srch-drop'))return;e.preventDefault();},{passive:false});
 window.addEventListener('resize',()=>{if(window.innerWidth>700){const sb=g('sidebar');if(sb)sb.classList.remove('hidden');}});
+
+// ═══ REACTIONS ═══
+const reactionsMap = {}; // msgId -> [{emoji, users:[]}]
+
+function showEmojiPicker(e){
+  e.stopPropagation();
+  if(!ctxMsg)return;
+  g('ctx-menu').classList.remove('open');
+  const picker=g('emoji-picker');
+  picker.classList.add('open');
+  picker.style.position='fixed';
+  const x=Math.min(e.clientX||window.innerWidth/2,window.innerWidth-220);
+  const y=Math.min(e.clientY||window.innerHeight/2,window.innerHeight-80);
+  picker.style.left=x+'px';picker.style.top=y+'px';
+  setTimeout(()=>document.addEventListener('click',closePicker,{once:true}),0);
+}
+function closePicker(){g('emoji-picker').classList.remove('open');}
+function addReaction(emoji){
+  closePicker();
+  if(!ctxMsg)return;
+  const msgId=ctxMsg.id;
+  if(!reactionsMap[msgId])reactionsMap[msgId]=[];
+  const existing=reactionsMap[msgId].find(r=>r.emoji===emoji);
+  if(existing){
+    if(existing.users.includes(ME.id)){existing.users=existing.users.filter(u=>u!==ME.id);}
+    else existing.users.push(ME.id);
+    if(existing.users.length===0)reactionsMap[msgId]=reactionsMap[msgId].filter(r=>r.emoji!==emoji);
+  }else{
+    reactionsMap[msgId].push({emoji,users:[ME.id]});
+  }
+  renderReactions(msgId);
+  // broadcast via socket
+  if(socket)socket.emit('reaction:add',{conversation_id:activeCid,message_id:msgId,emoji});
+}
+function renderReactions(msgId){
+  const el=document.getElementById('msg_'+msgId);if(!el)return;
+  let rEl=el.querySelector('.reactions');
+  if(!rEl){const meta=el.querySelector('.mmeta');if(meta){rEl=document.createElement('div');rEl.className='reactions';meta.parentNode.insertBefore(rEl,meta);}}
+  if(!rEl)return;
+  const rs=reactionsMap[msgId]||[];
+  if(!rs.length){rEl.innerHTML='';return;}
+  rEl.innerHTML=rs.map(r=>`<span class="reaction ${r.users.includes(ME.id)?'mine':''}" onclick="ctxMsg={id:'${msgId}'};addReaction('${r.emoji}')">${r.emoji}<span class="reaction-count">${r.users.length}</span></span>`).join('');
+}
+
+// ═══ PIN MESSAGE ═══
+let pinnedMsg=null;
+function ctxPin(){
+  if(!ctxMsg)return;
+  g('ctx-menu').classList.remove('open');
+  pinnedMsg={id:ctxMsg.id,content:ctxMsg.content};
+  renderPinnedBar();
+  toast('Message pinned 📌');
+}
+function renderPinnedBar(){
+  const msgs=g('msgs');if(!msgs)return;
+  let bar=document.getElementById('pinned-bar');
+  if(pinnedMsg){
+    if(!bar){bar=document.createElement('div');bar.id='pinned-bar';bar.className='pinned-bar';msgs.parentNode.insertBefore(bar,msgs);}
+    bar.innerHTML=`<span class="pinned-icon">📌</span><div class="pinned-text"><div class="pinned-label">Pinned message</div><div class="pinned-content">${esc(pinnedMsg.content.slice(0,60))}</div></div><button class="pinned-close" onclick="unpinMsg()">✕</button>`;
+    bar.onclick=e=>{if(!e.target.closest('.pinned-close'))scrollToMsg(pinnedMsg.id);};
+  }else if(bar){bar.remove();}
+}
+function unpinMsg(){pinnedMsg=null;const bar=document.getElementById('pinned-bar');if(bar)bar.remove();}
 
 init();
 </script>
