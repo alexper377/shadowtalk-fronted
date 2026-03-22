@@ -1581,8 +1581,16 @@ async function chatWith(uid){
 
 // ═══ CONFIRM ═══
 function showConfirm(title,text,cb){
-  confirmCb=cb;g('confirm-title').textContent=title;g('confirm-text').textContent=text;g('confirm-wrap').classList.add('open');
-  g('confirm-ok').onclick=()=>{closeConfirm();if(confirmCb)confirmCb();};
+  confirmCb=cb;
+  g('confirm-title').textContent=title;
+  g('confirm-text').textContent=text;
+  g('confirm-wrap').classList.add('open');
+  g('confirm-ok').onclick=()=>{
+    const fn=confirmCb;
+    confirmCb=null;
+    g('confirm-wrap').classList.remove('open');
+    if(fn)fn();
+  };
 }
 function closeConfirm(){g('confirm-wrap').classList.remove('open');confirmCb=null;}
 
