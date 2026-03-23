@@ -805,9 +805,16 @@ function installPWA(){if(deferredInstall){deferredInstall.prompt();deferredInsta
 if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
 
 // ═══ INIT ═══
+// ← ВСТАВЬ СВОЙ URL СЮДА
+const BACKEND_URL = 'https://shadowtalk-backend-production.up.railway.app';
+
 function init(){
-  const cfg=S.cfg;if(!cfg?.url){show('cfg-s');return;}
-  API=cfg.url.replace(/\/$/,'');
+  // Use hardcoded URL, fallback to saved config
+  const cfg=S.cfg;
+  API=(BACKEND_URL||cfg?.url||'').replace(/\/$/,'');
+  if(!API){show('cfg-s');return;}
+  // Save it automatically
+  S.cfg={url:API};
   const saved=S.auth;
   if(saved?.token){TK=saved.token;api('/api/auth/me').then(u=>{ME=u;enterApp();}).catch(()=>{S.clear();show('auth-s');genNick();});}
   else{show('auth-s');genNick();}
