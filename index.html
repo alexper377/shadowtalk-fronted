@@ -997,45 +997,27 @@ async function checkNick(v){
   if(!/^[a-z0-9_]{3,32}$/i.test(v)){h.style.color='var(--red)';h.textContent='✗ 3–32 chars, letters/numbers/_';return;}
   h.style.color='var(--text3)';h.textContent='checking…';clearTimeout(nickT);
   nickT=setTimeout(async()=>{try{const d=await api(`/api/users/check/${v.toLowerCase()}`);h.style.color=d.available?'var(--green)':'var(--red)';h.textContent=d.available?'✓ Available':'✗ Taken';}catch{h.textContent='';}},400);
-async function doReg(){
+
+  async function doReg(){
   const un = g('r-nick').value.trim().toLowerCase();
   const dn = g('r-name').value.trim();
-  const pw = g('r-pass')?.value || ''; // ← фикс
+  const pw = g('r-pass')?.value || '';
   const e = g('reg-err');
 
   e.textContent = '';
 
   if(!un) return e.textContent='Enter username';
-  if(!/^[a-z0-9_]{3,32}$/.test(un)) return e.textContent='Invalid username';
-
-  // ← фикс чтобы не падало
-  if(pw && pw.length < 6)
-    return e.textContent='Password too short';
-
-  setLoad('reg-btn', true, 'Create account');
 
   try{
     const {user, token} = await api('/api/auth/register',{
       method:'POST',
-      body:{
-        username: un,
-        display_name: dn,
-        password: pw // если бэк не использует — можно оставить
-      }
+      body:{ username: un, display_name: dn, password: pw }
     });
-
-    TK = token;
-    ME = user;
-    S.auth = {token};
-
-    hide('auth-s');
-    enterApp();
 
   }catch(err){
     e.textContent = err.message;
   }
 
-  setLoad('reg-btn', false, 'Create account');
 }
 
 function doLogout(){if(socket)socket.disconnect();S.clear();ME=null;TK=null;activeCid=null;activeConv=null;convs=[];friends=[];closeDrawer();closeInfoDrawer();hide('app-s');show('auth-s');genNick();initSeedPhrase();}
