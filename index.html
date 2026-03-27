@@ -453,6 +453,13 @@ button{cursor:pointer;}
 .pending-badge{font-size:11px;background:rgba(245,166,35,.12);color:var(--orange);border-radius:4px;padding:1px 6px;}
 
 
+
+/* SEED PHRASE */
+.seed-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px;}
+.seed-word{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:12px;display:flex;align-items:center;gap:6px;}
+.seed-num{color:var(--text3);font-size:10px;min-width:14px;font-family:'JetBrains Mono',monospace;}
+.seed-w{color:var(--text);font-weight:500;font-family:'JetBrains Mono',monospace;}
+
 /* REACTIONS */
 .reactions{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
 .reaction{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:3px 8px;font-size:13px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:4px;user-select:none;}
@@ -553,24 +560,41 @@ button{cursor:pointer;}
   <div class="tg-logo">
     <div class="tg-logo-icon"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
     <div class="tg-logo-name">ShadowTalk</div>
+    <div class="tg-logo-tag">Your keys. Your identity.</div>
   </div>
   <div class="acard">
     <div class="atitle">Create account</div>
-    <div class="asub">No phone number required</div>
+    <div class="asub">You get 12 secret words — your only way to sign in. Save them!</div>
     <div class="f"><label>Username</label>
       <div class="nick-row"><input id="r-nick" placeholder="shadow_wolf" maxlength="32" oninput="checkNick(this.value)" autocapitalize="none" autocomplete="off"/><button class="btn-regen" onclick="genNick()">⟳</button></div>
       <div class="nick-hint" id="nick-hint"></div>
     </div>
     <div class="f"><label>Display name (optional)</label><input id="r-name" placeholder="Your Name" maxlength="48"/></div>
-    <div class="f"><label>Password</label><input id="r-pass" type="password" placeholder="min 8 characters"/></div>
+
+    <!-- SEED PHRASE -->
+    <div class="f">
+      <label style="display:flex;align-items:center;justify-content:space-between">
+        Your secret phrase
+        <button onclick="regenerateSeed()" style="background:none;border:none;color:var(--acc);font-size:12px;cursor:pointer;font-family:Inter,sans-serif">↺ Regenerate</button>
+      </label>
+      <div class="seed-grid" id="seed-grid"></div>
+      <div style="background:rgba(242,80,80,0.08);border:1px solid rgba(242,80,80,0.2);border-radius:10px;padding:10px 12px;margin-top:8px;font-size:12px;color:var(--red);line-height:1.6">
+        ⚠️ Write down these 12 words in order. You will need them to sign in. We cannot recover them.
+      </div>
+    </div>
+    <div class="f">
+      <label>Confirm — enter word #<span id="confirm-word-num">?</span></label>
+      <input id="seed-confirm-inp" placeholder="Enter the word" autocapitalize="none" autocomplete="off" oninput="checkSeedConfirm(this.value)"/>
+      <div class="nick-hint" id="seed-confirm-hint"></div>
+    </div>
+
     <div class="err" id="reg-err"></div>
-    <button class="btn" id="reg-btn" onclick="doReg()">Create account</button>
+    <button class="btn" id="reg-btn" onclick="doReg()" disabled>Create account</button>
     <div class="afooter">Have account? <span onclick="showLogin()">Sign in</span></div>
   </div>
-  <div class="ptags"><div class="ptag">🔒 E2E Encrypted</div><div class="ptag">👤 Anonymous</div><div class="ptag">📵 No phone</div></div>
+  <div class="ptags"><div class="ptag">🔑 Seed phrase</div><div class="ptag">👤 Anonymous</div><div class="ptag">📵 No phone</div></div>
 </div>
 </div>
-
 <!-- LOGIN -->
 <div id="login-s" class="screen">
 <div class="auth-scroll">
@@ -580,16 +604,18 @@ button{cursor:pointer;}
   </div>
   <div class="acard">
     <div class="atitle">Welcome back</div>
-    <div class="asub">Sign in to continue</div>
+    <div class="asub">Enter your username and 12-word secret phrase</div>
     <div class="f"><label>Username</label><input id="l-nick" placeholder="your_username" autocapitalize="none" autocomplete="username"/></div>
-    <div class="f"><label>Password</label><input id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+    <div class="f">
+      <label>Secret phrase (12 words)</label>
+      <textarea id="l-seed" placeholder="word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12" style="min-height:80px;font-size:14px;font-family:JetBrains Mono,monospace" autocapitalize="none" autocomplete="off" spellcheck="false"></textarea>
+    </div>
     <div class="err" id="login-err"></div>
     <button class="btn" id="login-btn" onclick="doLogin()">Sign in</button>
     <div class="afooter">New? <span onclick="showReg()">Create account</span></div>
   </div>
 </div>
 </div>
-
 <!-- APP -->
 <div id="app-s" class="screen">
   <div class="sidebar" id="sidebar">
@@ -597,6 +623,7 @@ button{cursor:pointer;}
       <button class="ib" onclick="openDrawer()"><svg viewBox="0 0 24 24"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
       <span class="sb-head-title">ShadowTalk</span>
       <button class="ib acc" onclick="openNewChat()" title="New"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+      <button class="ib" onclick="openVoiceRooms()" title="Voice rooms"><svg viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg></button>
     </div>
     <div class="sb-search"><div class="srch-wrap">
       <input class="srch-inp" id="srch-inp" placeholder="Search" oninput="onSearch(this.value)" autocapitalize="none" autocomplete="off"/>
@@ -723,6 +750,7 @@ button{cursor:pointer;}
   <div class="ctx-item" onclick="showEmojiPicker(event)">😊 React</div>
   <div class="ctx-item" id="ctx-reply" onclick="ctxReply()"><svg viewBox="0 0 24 24"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>Reply</div>
   <div class="ctx-item" id="ctx-pin" onclick="ctxPin()"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Pin message</div>
+  <div class="ctx-item" id="ctx-destruct" onclick="ctxSelfDestruct()" style="display:none"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Self-destruct</div>
   <div class="ctx-item" id="ctx-copy" onclick="ctxCopy()"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</div>
   <div class="ctx-sep"></div>
   <div class="ctx-item red" onclick="ctxDelete(false)"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>Delete for me</div>
@@ -735,6 +763,33 @@ button{cursor:pointer;}
   <div class="ctx-sep"></div>
   <div class="ctx-item red" onclick="hideChatMenu();clearChat()"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>Clear history</div>
   <div class="ctx-item red" onclick="hideChatMenu();deleteConv()"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>Delete chat</div>
+</div>
+
+
+<!-- VOICE ROOMS MODAL -->
+<div class="modal-bg" id="vr-modal">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <button class="modal-x" onclick="closeModal('vr-modal')">✕</button>
+  <h3>🎙 Voice Rooms</h3>
+  <button class="btn" style="margin-bottom:14px" onclick="createVoiceRoom()">+ Create room</button>
+  <div id="vr-list"><div class="empty-tab">No rooms. Create one!</div></div>
+</div>
+</div>
+
+<!-- ANON CHAT -->
+<div class="modal-bg" id="anon-modal">
+<div class="modal">
+  <div class="modal-handle"></div>
+  <button class="modal-x" onclick="leaveAnonQueue()">✕</button>
+  <h3>🕶 Anonymous Chat</h3>
+  <div id="anon-status" style="text-align:center;padding:20px;color:var(--text2)">
+    <div style="font-size:40px;margin-bottom:12px">🔍</div>
+    <div>Looking for a stranger...</div>
+    <div class="dots" style="justify-content:center;margin-top:12px"><span></span><span></span><span></span></div>
+  </div>
+  <button class="btn btn-danger" onclick="leaveAnonQueue()" style="margin-top:12px">Cancel</button>
+</div>
 </div>
 
 <!-- CONFIRM -->
@@ -808,6 +863,44 @@ if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch
 // ← ВСТАВЬ СВОЙ URL СЮДА
 const BACKEND_URL = 'https://shadowtalk-backend-production.up.railway.app';
 
+const SEED_WORDS = [
+"abandon","ability","able","above","absent","absorb","absurd","abuse","access","accident",
+"account","achieve","acid","acoustic","acquire","action","actor","adapt","address","adjust",
+"admit","advance","advice","afford","afraid","agree","alarm","alien","allow","almost",
+"alpha","alter","amateur","amazing","amount","ancient","anger","animal","announce","answer",
+"april","arctic","arena","argue","armor","arrest","arrive","artist","aspect","asset",
+"assist","athlete","attack","attend","attract","audit","author","autumn","average","avoid",
+"awake","awesome","awkward","baby","balance","banana","banner","barrel","basket","battle",
+"beach","beauty","become","believe","below","benefit","betray","bicycle","biology","birth",
+"bitter","blade","blame","blanket","blast","blind","blood","blossom","board","bonus",
+"boost","bounce","brain","brand","brave","bread","breeze","bridge","bright","brother",
+"bubble","budget","build","burden","burst","butter","cabin","cancel","capable","captain",
+"carbon","carpet","casual","catch","caution","census","chaos","charge","chase","cheap",
+"cheese","chicken","chief","choice","chronic","citizen","civil","claim","clean","clever",
+"clock","close","cloud","clown","cluster","coil","color","column","combine","comfort",
+"comic","common","company","concert","conduct","confirm","congress","connect","consider","control",
+"copper","coral","cotton","couch","country","couple","courage","crane","crazy","creek",
+"crew","cross","crucial","cruel","crystal","culture","cupboard","curious","current","curtain",
+"cycle","damage","danger","daring","daughter","debris","delay","deliver","denial","deputy",
+"design","detail","detect","devote","differ","digital","dignity","dilemma","dinner","direct",
+"discover","dismiss","display","divide","doctor","domain","double","draft","dragon","drama"
+];
+
+function generateSeedPhrase(wordCount=12){
+  const words=[];
+  const arr=new Uint32Array(wordCount);
+  crypto.getRandomValues(arr);
+  for(let i=0;i<wordCount;i++)words.push(SEED_WORDS[arr[i]%SEED_WORDS.length]);
+  return words.join(' ');
+}
+
+function seedToPassword(seed){
+  // Deterministic hash from seed phrase
+  let h=0;
+  for(let i=0;i<seed.length;i++){h=Math.imul(31,h)+seed.charCodeAt(i)|0;}
+  return 'sp_'+Math.abs(h).toString(36)+'_'+seed.split(' ').map(w=>w[0]).join('');
+}
+
 function init(){
   // Use hardcoded URL, fallback to saved config
   const cfg=S.cfg;
@@ -816,8 +909,8 @@ function init(){
   // Save it automatically
   S.cfg={url:API};
   const saved=S.auth;
-  if(saved?.token){TK=saved.token;api('/api/auth/me').then(u=>{ME=u;enterApp();}).catch(()=>{S.clear();show('auth-s');genNick();});}
-  else{show('auth-s');genNick();}
+  if(saved?.token){TK=saved.token;api('/api/auth/me').then(u=>{ME=u;enterApp();}).catch(()=>{S.clear();show('auth-s');genNick();initSeedPhrase();});}
+  else{show('auth-s');genNick();initSeedPhrase();}
 }
 
 function toggleTheme(){
@@ -841,14 +934,63 @@ async function saveUrl(){
   try{
     const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),8000);
     const r=await fetch(`${url}/health`,{signal:ctrl.signal});if(!r.ok)throw 0;
-    S.cfg={url};API=url;hide('cfg-s');show('auth-s');genNick();
+    S.cfg={url};API=url;hide('cfg-s');show('auth-s');genNick();initSeedPhrase();
   }catch{g('cfg-err').textContent='Cannot connect. Check URL.';}
   setLoad('cfg-btn',false,'Connect →');
 }
 
 // ═══ AUTH ═══
+// ═══ SEED PHRASE AUTH ═══
+let currentSeed = '';
+let confirmWordIndex = 0;
+
+function initSeedPhrase(){
+  currentSeed = generateSeedPhrase(12);
+  renderSeedGrid();
+  pickConfirmWord();
+}
+
+function regenerateSeed(){
+  currentSeed = generateSeedPhrase(12);
+  renderSeedGrid();
+  pickConfirmWord();
+  g('reg-btn').disabled=true;
+  g('seed-confirm-inp').value='';
+  g('seed-confirm-hint').textContent='';
+}
+
+function renderSeedGrid(){
+  const words=currentSeed.split(' ');
+  g('seed-grid').innerHTML=words.map((w,i)=>`
+    <div class="seed-word">
+      <span class="seed-num">${i+1}.</span>
+      <span class="seed-w">${w}</span>
+    </div>`).join('');
+}
+
+function pickConfirmWord(){
+  const words=currentSeed.split(' ');
+  confirmWordIndex=Math.floor(Math.random()*12);
+  g('confirm-word-num').textContent=confirmWordIndex+1;
+}
+
+function checkSeedConfirm(val){
+  const h=g('seed-confirm-hint');
+  const words=currentSeed.split(' ');
+  const correct=words[confirmWordIndex];
+  if(!val){h.textContent='';g('reg-btn').disabled=true;return;}
+  if(val.trim().toLowerCase()===correct.toLowerCase()){
+    h.style.color='var(--green)';h.textContent='✓ Correct!';
+    g('reg-btn').disabled=false;
+  }else{
+    h.style.color='var(--red)';h.textContent='✗ Wrong word';
+    g('reg-btn').disabled=true;
+  }
+}
+
+
 function showLogin(){hide('auth-s');show('login-s');}
-function showReg(){hide('login-s');show('auth-s');}
+function showReg(){hide('login-s');show('auth-s');initSeedPhrase();}
 function genNick(){const n=ADJS[~~(Math.random()*ADJS.length)]+'_'+NOUNS[~~(Math.random()*NOUNS.length)];g('r-nick').value=n;checkNick(n);}
 async function checkNick(v){
   const h=g('nick-hint');if(!v){h.textContent='';return;}
@@ -867,15 +1009,8 @@ async function doReg(){
   catch(err){e.textContent=err.message;}
   setLoad('reg-btn',false,'Create account');
 }
-async function doLogin(){
-  const un=g('l-nick').value.trim().toLowerCase(),pw=g('l-pass').value,e=g('login-err');
-  e.textContent='';if(!un||!pw)return e.textContent='Fill all fields';
-  setLoad('login-btn',true,'Sign in');
-  try{const{user,token}=await api('/api/auth/login',{method:'POST',body:{username:un,password:pw}});TK=token;ME=user;S.auth={token};hide('login-s');enterApp();}
-  catch(err){e.textContent=err.message;}
-  setLoad('login-btn',false,'Sign in');
-}
-function doLogout(){if(socket)socket.disconnect();S.clear();ME=null;TK=null;activeCid=null;activeConv=null;convs=[];friends=[];closeDrawer();closeInfoDrawer();hide('app-s');show('auth-s');genNick();}
+
+function doLogout(){if(socket)socket.disconnect();S.clear();ME=null;TK=null;activeCid=null;activeConv=null;convs=[];friends=[];closeDrawer();closeInfoDrawer();hide('app-s');show('auth-s');genNick();initSeedPhrase();}
 
 // ═══ APP ═══
 function enterApp(){
@@ -1031,6 +1166,7 @@ async function openConv(cid){
       <div class="input-wrap">
         <button class="ia-btn" onclick="g('img-in').click()" title="Photo"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
         <button class="ia-btn" onclick="g('file-in').click()" title="File"><svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>
+        <button class="ia-btn" onclick="askAIBot()" title="AI Bot" style="color:var(--acc)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg></button>
         <textarea class="msg-inp" id="msg-inp" placeholder="Message" rows="1" onkeydown="onKey(event)" oninput="onInp(this)"></textarea>
       </div>
       <button class="btn-vidnote" id="btn-vn" onclick="toggleVidNote()" title="Video note"><svg viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>
@@ -1312,6 +1448,7 @@ function showCtx(e,msgId,isOut,content){
   ctxMsg={id:msgId,isOut,content:decodeHtml(content)};
   const menu=g('ctx-menu');
   g('ctx-del-all').style.display=isOut?'flex':'none';
+  const sd=g('ctx-destruct');if(sd)sd.style.display=isOut?'flex':'none';
   menu.classList.add('open');
   const x=Math.min(e.clientX||0,window.innerWidth-210);
   const y=Math.min(e.clientY||0,window.innerHeight-220);
@@ -1588,6 +1725,116 @@ async function chatWith(uid){
   closeModal('nc-modal');closeSrch();
   try{const{id}=await api('/api/conversations/direct',{method:'POST',body:{user_id:uid}});await loadConvs();await new Promise(r=>setTimeout(r,50));openConv(id);}catch(e){toast(e.message);}
 }
+
+// ═══ SELF-DESTRUCT ═══
+function ctxSelfDestruct(){
+  if(!ctxMsg)return;
+  g('ctx-menu').classList.remove('open');
+  showConfirm('Self-destruct message?','Choose timer (seconds):',async()=>{
+    const secs=parseInt(prompt('Delete after how many seconds? (min 5)','30'));
+    if(!secs||secs<5)return;
+    try{
+      await api(`/api/messages/${ctxMsg.id}/destruct`,{method:'POST',body:{seconds:secs}});
+      toast(`💣 Will delete in ${secs}s`);
+    }catch(e){toast(e.message);}
+  });
+}
+
+// ═══ AI BOT ═══
+async function askAIBot(){
+  if(!activeCid)return;
+  const msg=g('msg-inp');if(!msg)return;
+  const text=msg.value.trim()||prompt('Ask AI bot:','');
+  if(!text)return;
+  msg.value='';
+  // First send user message
+  socket.emit('message:send',{conversation_id:activeCid,content:text,type:'text'});
+  // Then get AI response
+  try{
+    toast('🤖 AI is thinking...');
+    await api('/api/ai/chat',{method:'POST',body:{message:text,conversation_id:activeCid}});
+  }catch(e){toast('AI error: '+e.message);}
+}
+
+// ═══ VOICE ROOMS ═══
+async function openVoiceRooms(){
+  openModal('vr-modal');
+  try{
+    const rooms=await api('/api/rooms');
+    const el=g('vr-list');
+    if(!rooms.length){el.innerHTML='<div class="empty-tab">No rooms. Create one!</div>';return;}
+    el.innerHTML=rooms.map(r=>`
+      <div class="user-card" onclick="joinVoiceRoom('${r.id}','${esc(r.name)}')">
+        <div class="av md sq" style="background:#7c3aed;font-size:18px">🎙</div>
+        <div><div class="uc-name">${esc(r.name)}</div><div class="uc-at">${r.members} listening · #${r.id}</div></div>
+        <button class="btn btn-sm">Join</button>
+      </div>`).join('');
+  }catch(e){toast(e.message);}
+}
+
+async function createVoiceRoom(){
+  const name=prompt('Room name:','General');if(!name)return;
+  try{
+    const r=await api('/api/rooms',{method:'POST',body:{name}});
+    closeModal('vr-modal');
+    joinVoiceRoom(r.id,r.name);
+  }catch(e){toast(e.message);}
+}
+
+async function joinVoiceRoom(id,name){
+  closeModal('vr-modal');
+  // Start audio call using existing WebRTC infrastructure
+  toast('🎙 Joining '+name+'...');
+  try{
+    lStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    showCallUI(name,'#7c3aed','Voice room · '+id,false,'audio');
+    callCid='room_'+id;
+    pc=new RTCPeerConnection(ICE_CFG);
+    lStream.getTracks().forEach(t=>pc.addTrack(t,lStream));
+    pc.onicecandidate=e=>{if(e.candidate)socket.emit('call:ice',{conversation_id:'room_'+id,candidate:e.candidate});};
+    pc.ontrack=e=>{try{const a=new Audio();a.srcObject=e.streams[0];a.play();}catch{}};
+    const offer=await pc.createOffer();await pc.setLocalDescription(offer);
+    socket.emit('call:offer',{conversation_id:'room_'+id,offer:pc.localDescription,type:'audio',caller_name:ME.display_name||ME.username,caller_color:ME.avatar_color});
+    g('call-status').textContent='In voice room · '+name;
+  }catch(e){toast('Cannot access mic: '+e.message);}
+}
+
+// ═══ ANON CHAT ═══
+async function startAnonChat(){
+  openModal('anon-modal');
+  try{
+    const r=await api('/api/anon/join',{method:'POST'});
+    if(r.status==='matched'){
+      closeModal('anon-modal');
+      await loadConvs();
+      openConv(r.conversation_id);
+      toast('🕶 Connected with a stranger!');
+    }else{
+      g('anon-status').innerHTML=`<div style="font-size:40px;margin-bottom:12px">⏳</div><div>Waiting for someone...</div><div style="font-size:12px;color:var(--text3);margin-top:8px">Position: ${r.position}</div><div class="dots" style="justify-content:center;margin-top:12px"><span></span><span></span><span></span></div>`;
+      // Poll for match
+      const poll=setInterval(async()=>{
+        try{const pr=await api('/api/anon/join',{method:'POST'});if(pr.status==='matched'){clearInterval(poll);closeModal('anon-modal');await loadConvs();openConv(pr.conversation_id);toast('🕶 Connected!');}}catch{clearInterval(poll);}
+      },3000);
+    }
+  }catch(e){toast(e.message);}
+}
+async function leaveAnonQueue(){
+  try{await api('/api/anon/leave',{method:'POST'});}catch{}
+  closeModal('anon-modal');
+}
+
+// ═══ REFERRAL ═══
+async function showReferral(){
+  try{
+    const r=await api('/api/referral/link');
+    const msg=`Your referral link:\n${r.link}\n\nShare it with friends!`;
+    if(navigator.share){navigator.share({title:'Join ShadowTalk',text:msg,url:r.link});}
+    else{navigator.clipboard.writeText(r.link).then(()=>toast('Referral link copied! 🎉'));}
+  }catch(e){toast(e.message);}
+}
+
+// Socket: anon matched
+socket.on && socket.on('anon:matched',(d)=>{loadConvs().then(()=>{closeModal('anon-modal');openConv(d.conversation_id);toast('🕶 Someone wants to chat!');});});
 
 // ═══ CONFIRM ═══
 function showConfirm(title,text,cb){
