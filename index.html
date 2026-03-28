@@ -997,27 +997,17 @@ async function checkNick(v){
   if(!/^[a-z0-9_]{3,32}$/i.test(v)){h.style.color='var(--red)';h.textContent='✗ 3–32 chars, letters/numbers/_';return;}
   h.style.color='var(--text3)';h.textContent='checking…';clearTimeout(nickT);
   nickT=setTimeout(async()=>{try{const d=await api(`/api/users/check/${v.toLowerCase()}`);h.style.color=d.available?'var(--green)':'var(--red)';h.textContent=d.available?'✓ Available':'✗ Taken';}catch{h.textContent='';}},400);
-
-  async function doReg(){
-  const un = g('r-nick').value.trim().toLowerCase();
-  const dn = g('r-name').value.trim();
-  const pw = g('r-pass')?.value || '';
-  const e = g('reg-err');
-
-  e.textContent = '';
-
-  if(!un) return e.textContent='Enter username';
-
-  try{
-    const {user, token} = await api('/api/auth/register',{
-      method:'POST',
-      body:{ username: un, display_name: dn, password: pw }
-    });
-
-  }catch(err){
-    e.textContent = err.message;
-  }
-
+}
+async function doReg(){
+  const un=g('r-nick').value.trim().toLowerCase(),dn=g('r-name').value.trim(),pw=g('r-pass').value,e=g('reg-err');
+  e.textContent='';
+  if(!un)return e.textContent='Enter username';
+  if(!/^[a-z0-9_]{3,32}$/.test(un))return e.textContent='Invalid username';
+  if(pw.length<8)return e.textContent='Password min 8 chars';
+  setLoad('reg-btn',true,'Create account');
+  try{const{user,token}=await api('/api/auth/register',{method:'POST',body:{username:un,display_name:dn,password:pw}});TK=token;ME=user;S.auth={token};hide('auth-s');enterApp();}
+  catch(err){e.textContent=err.message;}
+  setLoad('reg-btn',false,'Create account');
 }
 
 function doLogout(){if(socket)socket.disconnect();S.clear();ME=null;TK=null;activeCid=null;activeConv=null;convs=[];friends=[];closeDrawer();closeInfoDrawer();hide('app-s');show('auth-s');genNick();initSeedPhrase();}
@@ -1079,6 +1069,8 @@ function connectSocket(){
   socket.on('call:ice',async d=>{if(pc&&d.candidate)try{await pc.addIceCandidate(new RTCIceCandidate(d.candidate));}catch{}});
   socket.on('call:end',()=>endCall(false));
   socket.on('call:reject',()=>{endCall(false);toast('Call rejected');});
+  socket.on('anon:matched',(d)=>{loadConvs().then(()=>{closeModal('anon-modal');openConv(d.conversation_id);toast('🕶 Someone wants to chat!');});});
+  socket.on('room:created',(r)=>{toast('🎙 New room: '+r.name);});
 }
 
 function onNewMsg(msg){
@@ -1843,8 +1835,7 @@ async function showReferral(){
   }catch(e){toast(e.message);}
 }
 
-// Socket: anon matched
-socket.on && socket.on('anon:matched',(d)=>{loadConvs().then(()=>{closeModal('anon-modal');openConv(d.conversation_id);toast('🕶 Someone wants to chat!');});});
+// Socket: anon matched - registered in connectSocket()
 
 // ═══ CONFIRM ═══
 function showConfirm(title,text,cb){
