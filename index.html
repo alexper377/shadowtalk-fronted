@@ -1400,7 +1400,6 @@ function ctxDelete(forAll){
 function scrollToMsg(id){const el=document.getElementById('msg_'+id);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.style.transition='background .3s';el.style.background='var(--accs)';setTimeout(()=>el.style.background='',1200);}}
 
 // Pin
-let pinnedMsg=null;
 function ctxPin(){if(!ctxMsg)return;g('ctx-menu').classList.remove('open');pinnedMsg={id:ctxMsg.id,content:ctxMsg.content};renderPinned();toast('Pinned 📌');}
 function renderPinned(){const msgs=g('msgs');if(!msgs)return;let bar=document.getElementById('pinned-bar');if(pinnedMsg){if(!bar){bar=document.createElement('div');bar.id='pinned-bar';bar.className='pinned-bar';msgs.parentNode.insertBefore(bar,msgs);}bar.innerHTML=`<div style="flex:1;min-width:0"><div class="pinned-label">📌 Pinned</div><div class="pinned-content">${esc(pinnedMsg.content.slice(0,60))}</div></div><button class="pinned-x" onclick="unpinMsg()">✕</button>`;bar.onclick=e=>{if(!e.target.closest('.pinned-x'))scrollToMsg(pinnedMsg.id);};}else if(bar)bar.remove();}
 function unpinMsg(){pinnedMsg=null;const bar=document.getElementById('pinned-bar');if(bar)bar.remove();}
