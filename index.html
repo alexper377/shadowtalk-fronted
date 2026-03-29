@@ -1166,7 +1166,12 @@ function openChat(){const sb=g('sidebar');if(sb&&window.innerWidth<=700)sb.class
 function backToList(){activeCid=null;activeConv=null;const sb=g('sidebar');if(sb)sb.classList.remove('hidden');g('chat-area').innerHTML=defaultEmpty();}
 
 // ════ TABS ════
-function switchTab(t,el){document.querySelectorAll('.sb-tab').forEach(x=>x.classList.remove('on'));document.querySelectorAll('.tab-pane').forEach(x=>x.classList.remove('on'));el.classList.add('on');g('tp-'+t).classList.add('on');}
+function switchTab(t,el){
+  document.querySelectorAll('.sb-tab').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.tab-pane').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');
+  g('tp-'+t).classList.add('on');
+}
 
 // ════ CONVS ════
 async function loadConvs(){try{convs=await api('/api/conversations');renderList();}catch{}}
